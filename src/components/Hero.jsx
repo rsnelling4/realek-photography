@@ -4,7 +4,7 @@ export default function Hero() {
       {/* Background placeholder image */}
       <div className="absolute inset-0 z-0">
         <img
-          src="public/2.jpg"
+          src="2.jpg"
           alt="Hero portrait"
           className="w-full h-full object-cover object-center"
         />
