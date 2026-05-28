@@ -9,15 +9,25 @@ export default function Contact() {
     message: '',
   })
   const [submitted, setSubmitted] = useState(false)
+  const [error, setError] = useState(false)
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    // TODO: wire up to a form backend (e.g. Formspree, Netlify Forms)
-    setSubmitted(true)
+    setError(false)
+    const res = await fetch('https://formspree.io/f/mpqnbqyb', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify(form),
+    })
+    if (res.ok) {
+      setSubmitted(true)
+    } else {
+      setError(true)
+    }
   }
 
   const inputClass =
@@ -82,7 +92,13 @@ export default function Contact() {
                 </p>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-8 bg-cream p-10">
+              <>
+                {error && (
+                  <p className="bg-red-50 border border-red-200 text-red-700 font-sans text-sm px-4 py-3 mb-4">
+                    Something went wrong. Please try again or email directly.
+                  </p>
+                )}
+                <form onSubmit={handleSubmit} className="space-y-8 bg-cream p-10">
                 <div>
                   <label className="font-sans text-xs tracking-widest uppercase text-taupe block mb-2">
                     Full Name *
@@ -161,6 +177,7 @@ export default function Contact() {
                   Send Message
                 </button>
               </form>
+              </>
             )}
           </div>
         </div>
