@@ -73,10 +73,6 @@ export default function Contact() {
                 <div className="w-10 h-10 bg-terracotta/10 flex items-center justify-center flex-shrink-0">
                   <span className="text-terracotta text-lg">📷</span>
                 </div>
-                <div>
-                  <p className="font-sans text-xs tracking-widest uppercase text-taupe mb-0.5">Instagram</p>
-                  <p className="font-sans text-sm text-dark-brown">@realekphotography</p>
-                </div>
               </div>
             </div>
           </div>
@@ -153,9 +149,9 @@ export default function Contact() {
                     className={`${inputClass} bg-cream`}
                   >
                     <option value="">Select a package...</option>
-                    <option value="mini">Mini Session — $150</option>
-                    <option value="portrait">Portrait Session — $300</option>
-                    <option value="extended">Extended Session — $500</option>
+                    <option value="mini">Mini Session — $100</option>
+                    <option value="portrait">Portrait Session — $200</option>
+                    <option value="extended">Extended Session — $400</option>
                     <option value="custom">Custom / Not Sure Yet</option>
                   </select>
                 </div>
