@@ -26,9 +26,19 @@ const images = [
   { src: '23.jpg',     category: 'Grad' },
   { src: '24.jpg',     category: 'Grad' },
   { src: '25.jpg',     category: 'Grad' },
+  { src: '41.jpg',     category: 'Grad 2' },
+  { src: '42.jpg',     category: 'Grad 2' },
+  { src: '43.jpg',     category: 'Grad 2' },
+  { src: '44.jpg',     category: 'Grad 2' },
+  { src: '45.jpg',     category: 'Grad 2' },
+  { src: '46.jpg',     category: 'Grad 2' },
+  { src: '47.jpg',     category: 'Grad 2' },
+  { src: '48.jpg',     category: 'Grad 2' },
+  { src: '49.jpg',     category: 'Grad 2' },
+  { src: '50.jpg',     category: 'Grad 2' },
 ]
 
-const categories = ['All', 'Family', 'Outdoors', 'Grad']
+const categories = ['All', 'Family', 'Outdoors', 'Grad', 'Grad 2']
 
 export default function Portfolio() {
   const [active, setActive] = useState('All')

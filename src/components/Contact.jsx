@@ -69,11 +69,6 @@ export default function Contact() {
                   <p className="font-sans text-sm text-dark-brown">Available Everywhere</p>
                 </div>
               </div>
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 bg-terracotta/10 flex items-center justify-center flex-shrink-0">
-                  <span className="text-terracotta text-lg">📷</span>
-                </div>
-              </div>
             </div>
           </div>
 
