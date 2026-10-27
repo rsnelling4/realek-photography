@@ -16,6 +16,12 @@ export default {
         serif: ['"Playfair Display"', 'Georgia', 'serif'],
         sans: ['"Inter"', 'system-ui', 'sans-serif'],
       },
+      keyframes: {
+        'fade-in': { from: { opacity: 0 }, to: { opacity: 1 } },
+      },
+      animation: {
+        'fade-in': 'fade-in 300ms ease-out',
+      },
     },
   },
   plugins: [],

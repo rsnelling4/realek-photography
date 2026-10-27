@@ -6,6 +6,7 @@ export default function Contact() {
     email: '',
     phone: '',
     service: '',
+    date: '',
     message: '',
   })
   const [submitted, setSubmitted] = useState(false)
@@ -57,7 +58,7 @@ export default function Contact() {
                 </div>
                 <div>
                   <p className="font-sans text-xs tracking-widest uppercase text-taupe mb-0.5">Email</p>
-                  <p className="font-sans text-sm text-dark-brown">hello@realekphotography.com</p>
+                  <a href="mailto:hello@realekphotography.com" className="font-sans text-sm text-dark-brown hover:text-terracotta transition-colors">hello@realekphotography.com</a>
                 </div>
               </div>
               <div className="flex items-center gap-4">
@@ -66,7 +67,7 @@ export default function Contact() {
                 </div>
                 <div>
                   <p className="font-sans text-xs tracking-widest uppercase text-taupe mb-0.5">Location</p>
-                  <p className="font-sans text-sm text-dark-brown">Available Everywhere</p>
+                  <p className="font-sans text-sm text-dark-brown">Kentuckiana Area</p>
                 </div>
               </div>
             </div>
@@ -149,6 +150,18 @@ export default function Contact() {
                     <option value="extended">Extended Session — $400</option>
                     <option value="custom">Custom / Not Sure Yet</option>
                   </select>
+                </div>
+                <div>
+                  <label className="font-sans text-xs tracking-widest uppercase text-taupe block mb-2">
+                    Preferred Date
+                  </label>
+                  <input
+                    type="date"
+                    name="date"
+                    value={form.date}
+                    onChange={handleChange}
+                    className={inputClass}
+                  />
                 </div>
                 <div>
                   <label className="font-sans text-xs tracking-widest uppercase text-taupe block mb-2">

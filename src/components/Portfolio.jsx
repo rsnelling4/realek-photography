@@ -1,49 +1,36 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { photos } from '../data/gallery'
+import Lightbox from './Lightbox'
 
-const images = [
-  { src: '1.jpg',      category: 'Family' },
-  { src: '2.jpg',      category: 'Family' },
-  { src: '3.jpg',      category: 'Family' },
-  { src: '4.jpg',      category: 'Family' },
-  { src: '5.jpg',      category: 'Family' },
-  { src: '6.jpg',      category: 'Family' },
-  { src: '7.jpg',      category: 'Family' },
-  { src: 'grass2.jpg', category: 'Family' },
-  { src: '13.jpg',     category: 'Family' },
-  { src: '8.jpg',      category: 'Outdoors' },
-  { src: '9.jpg',      category: 'Outdoors' },
-  { src: '10.jpg',     category: 'Outdoors' },
-  { src: '11.jpg',     category: 'Outdoors' },
-  { src: '12.jpg',     category: 'Outdoors' },
-  { src: '14.jpg',     category: 'Outdoors' },
-  { src: '15.jpg',     category: 'Outdoors' },
-  { src: '16.jpg',     category: 'Outdoors' },
-  { src: '17.jpg',     category: 'Outdoors' },
-  { src: '18.jpg',     category: 'Outdoors' },
-  { src: '20.jpg',     category: 'Grad' },
-  { src: '21.jpg',     category: 'Grad' },
-  { src: '22.jpg',     category: 'Grad' },
-  { src: '23.jpg',     category: 'Grad' },
-  { src: '24.jpg',     category: 'Grad' },
-  { src: '25.jpg',     category: 'Grad' },
-  { src: '41.jpg',     category: 'Grad 2' },
-  { src: '42.jpg',     category: 'Grad 2' },
-  { src: '43.jpg',     category: 'Grad 2' },
-  { src: '44.jpg',     category: 'Grad 2' },
-  { src: '45.jpg',     category: 'Grad 2' },
-  { src: '46.jpg',     category: 'Grad 2' },
-  { src: '47.jpg',     category: 'Grad 2' },
-  { src: '48.jpg',     category: 'Grad 2' },
-  { src: '49.jpg',     category: 'Grad 2' },
-  { src: '50.jpg',     category: 'Grad 2' },
-]
+const categories = ['All', 'Family', 'Little Ones', 'Couples', 'Weddings', 'Seniors', 'Portraits']
+const PAGE_SIZE = 12
 
-const categories = ['All', 'Family', 'Outdoors', 'Grad', 'Grad 2']
+// Deal photos out one category at a time so the "All" view opens with variety
+// instead of a wall of one session type.
+const interleaved = (() => {
+  const groups = categories.slice(1).map((cat) => photos.filter((p) => p.category === cat))
+  const out = []
+  for (let i = 0; out.length < photos.length; i++) {
+    groups.forEach((g) => g[i] && out.push(g[i]))
+  }
+  return out
+})()
 
 export default function Portfolio() {
   const [active, setActive] = useState('All')
+  const [visible, setVisible] = useState(PAGE_SIZE)
+  const [openIndex, setOpenIndex] = useState(null)
 
-  const filtered = active === 'All' ? images : images.filter(img => img.category === active)
+  const filtered = useMemo(
+    () => (active === 'All' ? interleaved : photos.filter((p) => p.category === active)),
+    [active]
+  )
+  const shown = filtered.slice(0, visible)
+
+  const selectCategory = (cat) => {
+    setActive(cat)
+    setVisible(PAGE_SIZE)
+  }
 
   return (
     <section id="portfolio" className="py-24 px-6 bg-cream">
@@ -63,11 +50,12 @@ export default function Portfolio() {
 
         {/* Filter tabs */}
         <div className="flex justify-center gap-2 mb-12 flex-wrap">
-          {categories.map(cat => (
+          {categories.map((cat) => (
             <button
               key={cat}
-              onClick={() => setActive(cat)}
-              className={`font-sans text-xs font-medium tracking-widest uppercase px-6 py-2.5 transition-all duration-200 ${
+              onClick={() => selectCategory(cat)}
+              aria-pressed={active === cat}
+              className={`font-sans text-xs font-medium tracking-widest uppercase px-5 py-2.5 transition-all duration-200 ${
                 active === cat
                   ? 'bg-terracotta text-cream'
                   : 'border border-dark-brown/20 text-taupe hover:border-terracotta hover:text-terracotta'
@@ -80,23 +68,51 @@ export default function Portfolio() {
 
         {/* Grid */}
         <div className="columns-2 md:columns-3 gap-3 md:gap-4 space-y-3 md:space-y-4">
-          {filtered.map(({ src }) => (
-            <div key={src} className="break-inside-avoid overflow-hidden group cursor-pointer">
+          {shown.map((photo, i) => (
+            <button
+              key={photo.src}
+              onClick={() => setOpenIndex(i)}
+              aria-label={`View larger: ${photo.alt}`}
+              className="block w-full break-inside-avoid overflow-hidden group relative bg-parchment"
+            >
               <img
-                src={src}
-                alt="Portrait"
-                className="w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                src={photo.thumb}
+                alt={photo.alt}
+                width={photo.w}
+                height={photo.h}
+                loading="lazy"
+                decoding="async"
+                className="w-full h-auto transition-transform duration-700 group-hover:scale-105"
               />
-            </div>
+              <span className="absolute inset-0 bg-dark-brown/0 group-hover:bg-dark-brown/25 transition-colors duration-300 flex items-end p-4">
+                <span className="font-sans text-[10px] tracking-widest uppercase text-cream opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  {photo.category}
+                </span>
+              </span>
+            </button>
           ))}
         </div>
 
-        <div className="text-center mt-12">
-          <a href="#contact" className="btn-outline">
+        <div className="text-center mt-12 flex flex-col sm:flex-row gap-4 justify-center">
+          {visible < filtered.length && (
+            <button onClick={() => setVisible(visible + PAGE_SIZE)} className="btn-outline">
+              Show More ({filtered.length - visible})
+            </button>
+          )}
+          <a href="#contact" className="btn-primary">
             Book Your Session
           </a>
         </div>
       </div>
+
+      {openIndex !== null && (
+        <Lightbox
+          photos={filtered}
+          index={openIndex}
+          onChange={setOpenIndex}
+          onClose={() => setOpenIndex(null)}
+        />
+      )}
     </section>
   )
 }

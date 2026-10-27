@@ -14,7 +14,7 @@ export default function Hero() {
       {/* Content */}
       <div className="relative z-10 text-center px-6 max-w-3xl mx-auto">
         <p className="text-cream/70 font-sans font-medium tracking-[0.3em] uppercase text-xs mb-6">
-          REALEK Photography
+          REALEK Photography · Kentuckiana Area
         </p>
         <h1 className="font-serif text-5xl md:text-7xl text-cream leading-tight mb-6">
           Capture Every<br />

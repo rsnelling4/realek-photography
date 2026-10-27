@@ -10,9 +10,10 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  const links = ['Portfolio', 'About', 'Services', 'Contact']
+  const links = ['Portfolio', 'About', 'Services', 'FAQ', 'Contact']
 
   return (
+    <>
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
         scrolled ? 'bg-cream/95 backdrop-blur-sm shadow-sm py-4' : 'bg-transparent py-6'
@@ -68,5 +69,16 @@ export default function Navbar() {
         </div>
       )}
     </header>
+
+    {/* Mobile sticky booking button — the menu hides "Book Now" on phones */}
+    {scrolled && !menuOpen && (
+      <a
+        href="#contact"
+        className="md:hidden fixed bottom-5 right-5 z-40 btn-primary text-xs py-3 px-6 shadow-lg animate-fade-in"
+      >
+        Book Now
+      </a>
+    )}
+    </>
   )
 }
