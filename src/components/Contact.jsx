@@ -68,6 +68,25 @@ export default function Contact() {
                 <div>
                   <p className="font-sans text-xs tracking-widest uppercase text-taupe mb-0.5">Location</p>
                   <p className="font-sans text-sm text-dark-brown">Kentuckiana Area</p>
+                  <p className="font-sans text-xs text-taupe mt-0.5">
+                    Louisville, Jeffersonville, New Albany, Clarksville &amp; surrounding towns
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 bg-terracotta/10 flex items-center justify-center flex-shrink-0">
+                  <span className="text-terracotta text-lg font-serif font-semibold">f</span>
+                </div>
+                <div>
+                  <p className="font-sans text-xs tracking-widest uppercase text-taupe mb-0.5">Facebook</p>
+                  <a
+                    href="https://www.facebook.com/profile.php?id=61593007676902"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-sans text-sm text-dark-brown hover:text-terracotta transition-colors"
+                  >
+                    REALEK Photography
+                  </a>
                 </div>
               </div>
             </div>

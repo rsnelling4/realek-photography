@@ -8,12 +8,20 @@ export default function Footer() {
           REALEK<span className="text-terracotta">.</span>
         </a>
         <p className="font-sans text-xs text-center">
-          © {year} REALEK Photography. All rights reserved.
+          © {year} REALEK Photography · Serving Louisville &amp; Southern Indiana. All rights reserved.
         </p>
         <div className="flex gap-6 font-sans text-xs tracking-widest uppercase">
           <a href="#portfolio" className="hover:text-terracotta transition-colors">Portfolio</a>
           <a href="#services" className="hover:text-terracotta transition-colors">Services</a>
           <a href="#contact" className="hover:text-terracotta transition-colors">Contact</a>
+          <a
+            href="https://www.facebook.com/profile.php?id=61593007676902"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-terracotta transition-colors"
+          >
+            Facebook
+          </a>
         </div>
       </div>
     </footer>
