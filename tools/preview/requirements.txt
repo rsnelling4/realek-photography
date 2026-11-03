@@ -1,0 +1,6 @@
+anthropic>=2.4,<3
+numpy
+opencv-python
+Pillow
+pydantic>=2
+python-dotenv
