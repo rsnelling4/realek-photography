@@ -17,6 +17,7 @@ from PIL import Image
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import publish as r2  # noqa: E402
 import shoots as flow  # noqa: E402
+import watcher  # noqa: E402
 from review_server import App, start_server  # noqa: E402
 
 SETTINGS = r2.Settings("a" * 32, "id", "secret", "bucket", "https://galleries.test")
@@ -295,6 +296,26 @@ class TakeDownTests(Base):
         self.assertEqual(self.store.shoots["Ann + Bo"]["status"], "published")
         flow.mark_expired(self.store, today=date(2026, 12, 4))
         self.assertEqual(self.store.shoots["Ann + Bo"]["status"], "expired")
+
+
+class NotifyTests(unittest.TestCase):
+    def test_opens_the_page_when_windows_notifications_are_off(self):
+        with mock.patch.object(watcher, "windows_notifications_on", return_value=False), \
+                mock.patch.object(watcher.webbrowser, "open", return_value=True) as opened:
+            watcher.notify("Gallery ready", "Ann: 3 photos")
+        opened.assert_called_once_with(watcher.PAGE_URL)
+
+    def test_sends_a_notification_and_opens_nothing_when_they_are_on(self):
+        with mock.patch.object(watcher, "windows_notifications_on", return_value=True), \
+                mock.patch.object(watcher.webbrowser, "open") as opened, \
+                mock.patch("winotify.Notification") as toast:
+            watcher.notify("Gallery ready", "Ann: 3 photos")
+        toast.return_value.show.assert_called_once()
+        opened.assert_not_called()
+
+    def test_a_failure_never_stops_the_work(self):
+        with mock.patch.object(watcher, "windows_notifications_on", side_effect=RuntimeError("boom")):
+            watcher.notify("Gallery ready", "Ann: 3 photos")
 
 
 class SettingsTests(unittest.TestCase):

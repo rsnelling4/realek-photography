@@ -6,8 +6,9 @@ month. Every photo goes in, in shooting order, with a slideshow and downloads.
 ## Using it
 
 1. Add a client's folder of edited JPEGs to `Realek Galleries/Incoming` in Google Drive.
-2. About five minutes after copying finishes, a notification appears. Click it, or open
-   the approval page at http://127.0.0.1:8130/ on this PC.
+2. About five minutes after copying finishes, a notification appears, or the approval page
+   opens in your browser if Windows notifications are off. You can also go to
+   http://127.0.0.1:8130/ on this PC at any time.
 3. Check the client's name, remove any photos, choose the opening photo, and approve.
 4. Copy the ready-made message and send it to your client.
 

@@ -6,6 +6,8 @@ import logging
 import os
 import sys
 import time
+import webbrowser
+import winreg
 from pathlib import Path
 
 from dotenv import dotenv_values
@@ -23,18 +25,34 @@ DEFAULT_INCOMING = r"G:\My Drive\Realek Galleries\Incoming"
 POLL_SECONDS = 30
 DAILY_SECONDS = 24 * 60 * 60
 PAGE_URL = f"http://127.0.0.1:{PORT}/"
+PUSH_SETTINGS = r"Software\Microsoft\Windows\CurrentVersion\PushNotifications"
+
+
+def windows_notifications_on():
+    """Windows drops notifications silently when they're switched off, so this asks first."""
+    try:
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, PUSH_SETTINGS) as key:
+            return winreg.QueryValueEx(key, "ToastEnabled")[0] != 0
+    except OSError:  # never changed from the default, which is on
+        return True
 
 
 def notify(title, message):
-    """A Windows notification that opens the approval page. A failure here never stops the work."""
+    """A Windows notification, or the approval page itself if notifications are off.
+    A failure here never stops the work."""
     try:
+        if not windows_notifications_on():
+            opened = webbrowser.open(PAGE_URL)
+            logging.info("%s: %s. Notifications are off, so opened the approval page (%s)", title, message, opened)
+            return
         from winotify import Notification
 
         toast = Notification(app_id="REALEK Galleries", title=title, msg=message, launch=PAGE_URL)
         toast.add_actions(label="Review", launch=PAGE_URL)
         toast.show()
+        logging.info("%s: %s. Sent a notification", title, message)
     except Exception:
-        logging.exception("Couldn't show a notification")
+        logging.exception("Couldn't let Robert know a gallery is ready")
 
 
 def get_r2():
