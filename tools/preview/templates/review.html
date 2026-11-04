@@ -42,6 +42,11 @@
   .linkbox { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .75rem; }
   .done a { color: var(--terracotta-dark); overflow-wrap: anywhere; }
   .empty { background: var(--parchment); padding: 1.5rem; }
+  #testimonials h2 { margin-bottom: .75rem; }
+  #testimonials .quote { width: 100%; max-width: 42rem; height: 9rem; }
+  #testimonials .private { background: var(--parchment); }
+  #testimonials .said { white-space: pre-wrap; overflow-wrap: anywhere; margin: .75rem 0 0; }
+  #testimonials .linkbox { align-items: center; }
   #toast { position: fixed; bottom: 1rem; left: 50%; transform: translateX(-50%); background: var(--dark-brown); color: #fff; padding: .6rem 1rem; }
 </style>
 </head>
@@ -49,6 +54,7 @@
 <main>
   <h1>Client galleries</h1>
   <p class="sub">Add a client's folder to <strong>Realek Galleries / Incoming</strong> in Google Drive, and it appears here about five minutes after copying finishes.</p>
+  <section class="shoot" id="testimonials" hidden></section>
   <div id="list"></div>
   <div class="empty" id="empty" hidden>No galleries yet. Add a folder of edited photos to get started.</div>
 </main>
@@ -186,6 +192,68 @@
   };
   refresh(true);
   setInterval(refresh, 3000);
+
+  // ---------- Testimonials ----------
+  // Your edits stay put while the page refreshes, like your gallery choices above.
+  const wordDrafts = {};
+  let lastWords = '';
+  const dateLabel = (iso) => new Date(iso).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
+  const act = async (path, body, button) => {
+    button.disabled = true;
+    try { await post(`/api/testimonials/${path}`, body); delete wordDrafts[body.id]; await refreshWords(); }
+    catch (err) { toast(err.message); button.disabled = false; }
+  };
+
+  const waitingCard = (t) => {
+    const draft = (wordDrafts[t.id] ||= { name: t.name, text: t.text });
+    const remove = el('button', { className: 'quiet', textContent: 'Delete', onclick: () => {
+      if (confirm(`Delete this message from ${t.client}? It can't be brought back.`)) act('delete', { id: t.id }, remove);
+    } });
+    const heading = el('div', { className: 'row' }, el('strong', { textContent: t.client }),
+      el('span', { className: `status ${t.share ? 'ready' : 'private'}`, textContent: t.share ? 'Ready for your approval' : 'Private feedback' }));
+    const sent = el('p', { className: 'muted', textContent: `Sent ${dateLabel(t.submitted)}` });
+    if (!t.share) {
+      return el('div', { className: 'warn' }, heading, sent,
+        el('p', { className: 'said', textContent: t.text }),
+        el('p', { className: 'muted', textContent: `Signed ${t.name}. They didn't give permission to post this, so it can't go on the website.` }),
+        el('div', { className: 'linkbox' }, remove));
+    }
+    const name = el('input', { value: draft.name, oninput: (e) => { draft.name = e.target.value; } });
+    const words = el('textarea', { className: 'quote', value: draft.text, oninput: (e) => { draft.text = e.target.value; } });
+    const approve = el('button', { className: 'btn', textContent: 'Approve and post to website', onclick: () => act('approve', { id: t.id, name: draft.name, text: draft.text }, approve) });
+    return el('div', { className: 'warn' }, heading, sent,
+      el('label', { textContent: 'Name to show' }, name),
+      el('label', { textContent: 'Their words (fix a typo if needed, but keep them theirs)' }, words),
+      el('div', { className: 'linkbox' }, approve, remove));
+  };
+
+  const postedCard = (t) => {
+    const remove = el('button', { className: 'quiet', textContent: 'Remove from website', onclick: () => act('unpublish', { id: t.id }, remove) });
+    return el('div', { className: 'warn' }, el('strong', { textContent: t.name }),
+      el('p', { className: 'said', textContent: t.text }),
+      el('div', { className: 'linkbox' }, remove));
+  };
+
+  async function refreshWords(first) {
+    let data;
+    try { data = await (await fetch(first === true ? '/api/testimonials?fresh=1' : '/api/testimonials')).json(); }
+    catch { return; }
+    const box = $('testimonials');
+    box.hidden = !data.configured;
+    const key = JSON.stringify(data);
+    if (!data.configured || key === lastWords) return;
+    lastWords = key;
+    box.replaceChildren(el('h2', { textContent: 'Client testimonials' }));
+    if (data.error) box.append(el('p', { className: 'error', textContent: data.error }));
+    if (!data.pending.length) box.append(el('p', { className: 'muted', textContent: 'Nothing waiting for you. New ones show up here within about five minutes of being sent.' }));
+    data.pending.forEach((t) => box.append(waitingCard(t)));
+    if (data.published.length) {
+      box.append(el('p', { className: 'tools', textContent: `On your website now (${data.published.length})` }));
+      data.published.forEach((t) => box.append(postedCard(t)));
+    }
+  }
+  refreshWords(true);
+  setInterval(refreshWords, 30000);
 </script>
 </body>
 </html>

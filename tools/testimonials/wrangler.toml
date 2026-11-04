@@ -1,0 +1,10 @@
+name = "realek-testimonials"
+main = "worker.js"
+compatibility_date = "2026-05-01"
+
+[vars]
+GALLERY_ORIGIN = "https://galleries.realekphotography.com"
+
+[[kv_namespaces]]
+binding = "TESTIMONIALS"
+id = "bfb20f875e544f838e7ff45c2a17be00"

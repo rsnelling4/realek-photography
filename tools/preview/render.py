@@ -103,7 +103,7 @@ def expiry_label(expires):
     return f"{expires:%B} {expires.day}, {expires.year}"
 
 
-def finish_gallery(photos, out, client, expires, cover=0):
+def finish_gallery(photos, out, client, expires, cover=0, feedback=None):
     """Writes the zip and page for exactly these photos and returns the page's data."""
     out = Path(out)
     if not photos:
@@ -115,6 +115,7 @@ def finish_gallery(photos, out, client, expires, cover=0):
         "cover": cover if 0 <= cover < len(photos) else 0,
         "zip": {"src": ZIP_NAME, "name": f"{safe_client}.zip", "size": size_label(build_zip(out, photos))},
         "photos": photos,
+        "feedback": feedback,
     }
     # Escaping "<" keeps a client name from ever closing the script tag.
     data = json.dumps(manifest, ensure_ascii=False).replace("<", "\\u003c")
@@ -125,12 +126,12 @@ def finish_gallery(photos, out, client, expires, cover=0):
     return manifest
 
 
-def render_gallery(photos, out, client, expires, cover=0):
+def render_gallery(photos, out, client, expires, cover=0, feedback=None):
     """Builds a whole gallery. Returns the photos it couldn't read."""
     rendered, failed = render_photos(photos, out)
     if not rendered:
         raise ValueError("None of these photos could be read.")
-    finish_gallery(rendered, out, client, expires, cover)
+    finish_gallery(rendered, out, client, expires, cover, feedback)
     return failed
 
 

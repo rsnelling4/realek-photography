@@ -12,14 +12,17 @@ PORT = 8130
 PAGE = HERE / "templates" / "review.html"
 IMAGE_PATH = re.compile(r"^/work/([a-z0-9-]+)/(thumb|img)/(\d{3}\.jpg)$")
 MAX_BODY = 1_000_000
+TESTIMONIAL_ACTIONS = {"/api/testimonials/approve": "approve", "/api/testimonials/unpublish": "unpublish",
+                       "/api/testimonials/delete": "delete"}
 
 
 class App:
     """What the page needs: the shoots, and the means to publish them."""
 
-    def __init__(self, store, get_r2):
+    def __init__(self, store, get_r2, testimonials=None):
         self.store = store
         self.get_r2 = get_r2  # returns (s3 client, settings), and raises if they aren't set up
+        self.testimonials = testimonials  # None until they're set up
 
     def publish_in_background(self, name, client, removed, cover):
         with self.store.lock:
@@ -38,6 +41,35 @@ class App:
             raise ValueError("That shoot no longer exists.")
         s3, settings = self.get_r2()
         flow.take_down_shoot(self.store, name, s3, settings)
+
+    def testimonial_data(self, fresh=False):
+        if self.testimonials is None:
+            return {"configured": False}
+        error = None
+        if fresh:
+            try:
+                self.testimonials.sync()
+            except Exception as exc:  # the page still shows the last list, with the reason
+                error = f"Couldn't check for new testimonials: {exc}"
+        clients = {r.get("token"): r["client"] for r in self.store.snapshot().values() if r.get("token")}
+
+        def for_page(item):
+            shown = {key: item.get(key) for key in ("id", "name", "text", "share", "submitted")}
+            return {**shown, "client": clients.get(item.get("gallery"), "A client")}
+
+        data = self.testimonials.data
+        return {"configured": True, "error": error, "pending": [for_page(i) for i in data["pending"]],
+                "published": [for_page(i) for i in data["published"]]}
+
+    def testimonial_action(self, action, data):
+        if self.testimonials is None:
+            raise ValueError("Testimonials aren't set up yet.")
+        if action == "approve":
+            self.testimonials.approve(data["id"], data.get("name"), data.get("text"))
+        elif action == "unpublish":
+            self.testimonials.unpublish(data["id"])
+        else:
+            self.testimonials.delete(data["id"])
 
 
 def make_handler(app, port):
@@ -70,6 +102,8 @@ def make_handler(app, port):
                 return self.send_body(200, PAGE.read_bytes(), "text/html; charset=utf-8")
             if path == "/api/shoots":
                 return self.send_json(200, {"shoots": app.store.snapshot()})
+            if path == "/api/testimonials":
+                return self.send_json(200, app.testimonial_data(fresh="fresh=1" in self.path))
             match = IMAGE_PATH.match(path)
             if match:
                 slug, folder, file_name = match.groups()
@@ -93,6 +127,8 @@ def make_handler(app, port):
                     app.publish_in_background(data["name"], data.get("client"), data.get("removed"), data.get("cover"))
                 elif self.path == "/api/take-down":
                     app.take_down(data["name"])
+                elif self.path in TESTIMONIAL_ACTIONS:
+                    app.testimonial_action(TESTIMONIAL_ACTIONS[self.path], data)
                 else:
                     return self.send_json(404, {"error": "Not found"})
             except (ValueError, KeyError, TypeError) as exc:

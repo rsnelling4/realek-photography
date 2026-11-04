@@ -15,6 +15,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 import publish as r2
+import testimonials
 from images import EXTENSIONS
 from render import EXPIRY_DAYS, expiry_label, finish_gallery, list_photos, render_photos
 
@@ -167,7 +168,7 @@ def publish_shoot(store, name, client, removed, cover, s3, settings, today=None,
         # Dated from approval, so time spent waiting for review doesn't shorten the client's month.
         expires = (today or date.today()) + timedelta(days=EXPIRY_DAYS)
         out = store.work_dir(record)
-        manifest = finish_gallery(photos, out, client, expires, cover_index)
+        manifest = finish_gallery(photos, out, client, expires, cover_index, testimonials.page_settings(settings, token))
         url = r2.upload_gallery(s3, settings, out, manifest, token)
         if not live_check(url):
             raise RuntimeError("The upload finished, but the gallery didn't open at its address.")

@@ -121,8 +121,16 @@ class RenderTests(unittest.TestCase):
     def test_favorites_are_gone_from_the_page(self):
         self.render()
         html = self.html().lower()
-        for word in ("favorite", "formspree", "heart", "localstorage"):
+        for word in ("favorite", "formspree", "heart"):
             self.assertNotIn(word, html)
+
+    def test_no_testimonial_settings_means_no_asking(self):
+        self.render()
+        self.assertIsNone(self.manifest()["feedback"])
+
+    def test_testimonial_settings_reach_the_page(self):
+        render_gallery(self.photos, self.out, "Ann + Bo", date(2027, 3, 5), feedback={"url": "https://w.test", "gallery": "tok", "key": "k"})
+        self.assertEqual(self.manifest()["feedback"]["url"], "https://w.test")
 
     def test_hostile_client_name_cannot_break_out_of_the_script(self):
         evil = '</script><script>alert(1)</script>'

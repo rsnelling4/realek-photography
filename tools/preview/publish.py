@@ -28,6 +28,8 @@ class Settings:
     secret_access_key: str
     bucket: str
     base_url: str
+    testimonials_url: str = None  # both optional; see testimonials.py
+    testimonials_secret: str = None
 
 
 def load_settings(env):
@@ -39,7 +41,8 @@ def load_settings(env):
     if not match:
         raise ValueError("R2_ACCOUNT_ID in .env doesn't contain a Cloudflare account ID.")
     return Settings(match.group(0), env["R2_ACCESS_KEY_ID"], env["R2_SECRET_ACCESS_KEY"], env["R2_BUCKET"],
-                    env["GALLERY_BASE_URL"].rstrip("/"))
+                    env["GALLERY_BASE_URL"].rstrip("/"),
+                    (env.get("VITE_TESTIMONIALS_URL") or "").rstrip("/") or None, env.get("TESTIMONIALS_SECRET") or None)
 
 
 def make_client(settings):

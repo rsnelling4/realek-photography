@@ -80,6 +80,25 @@
   .tile > button { display: block; width: 100%; }
   .tile img { display: block; width: 100%; height: auto; }
   .tile .icon { position: absolute; right: 0; bottom: 0; color: #fff; opacity: 1; filter: drop-shadow(0 1px 3px rgba(0,0,0,.7)); }
+
+  /* Asking for a testimonial */
+  #askcard { margin: 1.5rem auto 0; padding: 1rem 1.25rem; max-width: 30rem; background: var(--parchment); font-size: .9rem; line-height: 1.5; }
+  #askcard p { margin: 0 0 .35rem; }
+  #ask { width: min(34rem, calc(100vw - 2rem)); max-height: calc(100dvh - 2rem); overflow-y: auto; border: 0; padding: 1.75rem; background: var(--cream); color: var(--dark-brown); }
+  #ask::backdrop { background: rgba(44,24,16,.7); }
+  #ask .label { color: var(--terracotta); }
+  #ask h3 { font-family: var(--serif); font-weight: 400; font-style: italic; font-size: 1.8rem; line-height: 1.2; margin: .4rem 0 .6rem; outline: none; }
+  #ask p { margin: 0 0 1rem; font-weight: 300; line-height: 1.55; }
+  #ask label { display: block; margin-bottom: 1rem; font-size: .8rem; font-weight: 500; }
+  #ask textarea, #ask input[type=text] { display: block; width: 100%; margin-top: .35rem; padding: .6rem; border: 1px solid #ccbfb2; background: #fff; color: var(--dark-brown); font: 400 1rem var(--sans); }
+  #ask textarea { height: 8rem; resize: vertical; }
+  #ask textarea:focus, #ask input:focus { outline: 2px solid var(--terracotta); outline-offset: 0; border-color: transparent; }
+  #ask .check { display: flex; gap: .6rem; align-items: flex-start; font-weight: 400; line-height: 1.45; }
+  #ask .check input { flex: none; width: 1.1rem; height: 1.1rem; margin: .1rem 0 0; accent-color: var(--terracotta-dark); }
+  #ask .small { font-size: .8rem; color: var(--warm-brown); margin: -.4rem 0 1.25rem; }
+  #ask .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 1.25rem; }
+  #ask .btn:disabled { opacity: .55; cursor: default; }
+  #askerror { color: #9b2c1a; font-weight: 400; }
 </style>
 </head>
 <body>
@@ -132,9 +151,43 @@
     <p id="expiry"></p>
     <a class="btn" id="dlall"></a>
     <p id="dlnote"></p>
+    <div id="askcard" hidden>
+      <p id="askcardtext">Enjoyed your session?</p>
+      <button class="link" id="askopen">Share your experience</button>
+    </div>
   </div>
   <div id="thumbs"></div>
 </section>
+
+<dialog id="ask" aria-labelledby="asktitle">
+  <form id="askform" novalidate>
+    <div class="label">A small favor</div>
+    <h3 id="asktitle" tabindex="-1" autofocus>How was your experience?</h3>
+    <p>REALEK is a small business, so kind words from real clients mean the world. They help other families find me and feel confident booking their own session. Would you share a few sentences about how it went, from booking through getting your photos?</p>
+    <label>Your experience
+      <textarea id="asktext" maxlength="1500" placeholder="What was booking and your session like? How do you feel about your photos?"></textarea>
+    </label>
+    <label>Name to show
+      <input type="text" id="askname" maxlength="80" autocomplete="off">
+    </label>
+    <label class="check">
+      <input type="checkbox" id="askshare">
+      <span>REALEK Photography may share my words and this name on its website.</span>
+    </label>
+    <p class="small">Leave this unchecked to send your comments to me privately. Nothing is posted until I've read it.</p>
+    <p id="askerror" role="alert" hidden></p>
+    <div class="actions">
+      <button class="btn" id="asksend" type="submit">Send</button>
+      <button class="link" id="asklater" type="button">Maybe later</button>
+    </div>
+  </form>
+  <div id="askthanks" hidden>
+    <div class="label">Thank you</div>
+    <h3>That means so much.</h3>
+    <p>Thank you for sharing, and for trusting me with your photos.</p>
+    <button class="btn" id="askclose" type="button">Back to my photos</button>
+  </div>
+</dialog>
 
 <script>
 (() => {
@@ -193,6 +246,7 @@
   const finish = () => {
     setPlaying(false);
     showView('grid');
+    offerFeedback();
   };
   function next(auto) {
     if (index >= photos.length - 1) return finish();
@@ -204,6 +258,59 @@
     showView('show');
     setPlaying(!reducedMotion);
     showPhoto(from);
+  };
+
+  // ---------- Asking for a testimonial ----------
+  // Asked once, after the client has seen their photos, and never in the way of them.
+  const feedback = data.feedback;
+  const askKey = feedback ? `realek-testimonial-${feedback.gallery}` : '';
+  const askState = () => { try { return localStorage.getItem(askKey); } catch { return null; } };
+  const setAskState = (value) => { try { localStorage.setItem(askKey, value); } catch { /* it may just ask again */ } };
+
+  const openAsk = () => {
+    if ($('ask').open) return;
+    setAskState(askState() || 'asked');
+    $('ask').showModal();
+  };
+  const offerFeedback = () => { if (feedback && !askState()) openAsk(); };
+
+  const sendFeedback = async (event) => {
+    event.preventDefault();
+    const text = $('asktext').value.trim();
+    const name = $('askname').value.trim();
+    const problem = !text ? 'Please share a few words first.' : !name ? 'Please add a name to show.' : '';
+    $('askerror').textContent = problem;
+    $('askerror').hidden = !problem;
+    if (problem) return;
+    $('asksend').disabled = true;
+    $('asksend').textContent = 'Sending…';
+    try {
+      const res = await fetch(`${feedback.url}/submissions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gallery: feedback.gallery, key: feedback.key, name, text, share: $('askshare').checked }),
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error);
+      setAskState('sent');
+      $('askform').hidden = true;
+      $('askthanks').hidden = false;
+      showAskCard();
+    } catch (err) {
+      // What they wrote stays in the box, so nothing has to be typed again.
+      const offline = err instanceof TypeError;  // what fetch throws when the connection fails
+      $('askerror').textContent = (!offline && err.message) || "That didn't send. Please check your connection and try again.";
+      $('askerror').hidden = false;
+    }
+    $('asksend').disabled = false;
+    $('asksend').textContent = 'Send';
+  };
+
+  const showAskCard = () => {
+    $('askcard').hidden = !feedback;
+    if (askState() === 'sent') {
+      $('askcardtext').textContent = 'Thank you for sharing your experience!';
+      $('askopen').hidden = true;
+    }
   };
 
   // ---------- Gallery page ----------
@@ -250,6 +357,16 @@
   $('start').addEventListener('click', () => play(0));
   $('replay').addEventListener('click', () => play(0));
   $('browse').addEventListener('click', () => showView('grid'));
+  // A moment later, so the prompt doesn't look like it's standing in the way of the download.
+  $('dlall').addEventListener('click', () => { setTimeout(offerFeedback, 1500); });
+  if (feedback) {
+    $('askname').value = data.client;
+    showAskCard();
+    $('askopen').addEventListener('click', openAsk);
+    $('askform').addEventListener('submit', sendFeedback);
+    $('asklater').addEventListener('click', () => $('ask').close());
+    $('askclose').addEventListener('click', () => $('ask').close());
+  }
   $('togrid').addEventListener('click', () => { setPlaying(false); showView('grid'); });
   $('prev').addEventListener('click', prev);
   $('next').addEventListener('click', () => next(false));
