@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Client galleries · REALEK</title>
+<link rel="icon" href="data:,">
+<style>
+  :root { --cream: #FDFAF6; --parchment: #F0E6D9; --terracotta: #C17A50; --terracotta-dark: #A3613A; --warm-brown: #8B5E3C; --dark-brown: #2C1810; --bad: #9b2c1a; }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; font: 15px/1.5 system-ui, sans-serif; background: var(--cream); color: var(--dark-brown); }
+  main { max-width: 1200px; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
+  h1 { font: italic 400 2rem Georgia, serif; margin: 0 0 .25rem; }
+  h2 { font: 400 1.4rem Georgia, serif; margin: 0; overflow-wrap: anywhere; }
+  .sub { color: var(--warm-brown); margin: 0 0 1.5rem; }
+  .shoot { background: #fff; border: 1px solid var(--parchment); padding: 1.25rem; margin-bottom: 1.25rem; }
+  .row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; }
+  .status { font-size: .7rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; padding: .25rem .6rem; background: var(--parchment); }
+  .status.ready { background: var(--terracotta); color: #fff; }
+  .muted { color: var(--warm-brown); font-size: .9rem; margin: .4rem 0 0; }
+  .warn { background: #fbeadf; border-left: 4px solid var(--terracotta); padding: .6rem .8rem; margin: .75rem 0 0; }
+  .error { background: #fbe4e0; border-left: 4px solid var(--bad); padding: .6rem .8rem; margin: .75rem 0 0; }
+  button { font: inherit; cursor: pointer; }
+  .btn { background: var(--terracotta); color: #fff; border: 0; padding: .7rem 1.25rem; font-weight: 500; }
+  .btn:hover { background: var(--terracotta-dark); }
+  .btn:disabled { opacity: .55; cursor: default; }
+  .quiet { background: none; border: 1px solid var(--warm-brown); color: var(--dark-brown); padding: .5rem .9rem; }
+  label { display: block; font-size: .8rem; color: var(--warm-brown); margin-top: 1rem; }
+  input, textarea { display: block; width: 100%; max-width: 30rem; margin-top: .25rem; padding: .55rem; border: 1px solid #ccbfb2; font: 400 1rem system-ui, sans-serif; color: var(--dark-brown); }
+  textarea { max-width: 42rem; height: 14rem; }
+  .tools { margin: 1rem 0 .5rem; }
+  .thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 6px; max-height: 60vh; overflow-y: auto; }
+  .thumb { position: relative; background: var(--parchment); aspect-ratio: 1; }
+  .thumb img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .thumb.out img { opacity: .2; }
+  .thumb.cover { outline: 3px solid var(--terracotta); outline-offset: -3px; }
+  .thumb .acts { position: absolute; left: 0; right: 0; bottom: 0; display: flex; }
+  .thumb .acts button { flex: 1; border: 0; background: rgba(44,24,16,.75); color: #fff; font-size: .7rem; padding: .3rem 0; }
+  .thumb .acts button:hover { background: var(--dark-brown); }
+  .thumb .tag { position: absolute; top: 4px; left: 4px; background: var(--terracotta); color: #fff; font-size: .65rem; padding: 0 .35rem; }
+  .linkbox { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .75rem; }
+  .done a { color: var(--terracotta-dark); overflow-wrap: anywhere; }
+  .empty { background: var(--parchment); padding: 1.5rem; }
+  #toast { position: fixed; bottom: 1rem; left: 50%; transform: translateX(-50%); background: var(--dark-brown); color: #fff; padding: .6rem 1rem; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Client galleries</h1>
+  <p class="sub">Add a client's folder to <strong>Realek Galleries / Incoming</strong> in Google Drive, and it appears here about five minutes after copying finishes.</p>
+  <div id="list"></div>
+  <div class="empty" id="empty" hidden>No galleries yet. Add a folder of edited photos to get started.</div>
+</main>
+<div id="toast" hidden role="status"></div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const el = (tag, props = {}, ...kids) => {
+    const node = Object.assign(document.createElement(tag), props);
+    node.append(...kids);
+    return node;
+  };
+  const toast = (text) => {
+    $('toast').textContent = text;
+    $('toast').hidden = false;
+    setTimeout(() => { $('toast').hidden = true; }, 3000);
+  };
+  const post = async (path, body) => {
+    const res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'That did not work.');
+  };
+  const copy = async (text, what) => {
+    try { await navigator.clipboard.writeText(text); toast(`${what} copied`); }
+    catch { toast('Copy failed. Please select it and copy by hand.'); }
+  };
+
+  // Choices you've made but not published yet stay put while the page refreshes.
+  const drafts = {};
+  const draftFor = (s) => (drafts[s.name] ||= { client: s.client, removed: new Set(s.removed || []), cover: s.cover });
+
+  const LABELS = {
+    waiting: 'Waiting for copying to finish', building: 'Building', ready: 'Ready for your approval',
+    publishing: 'Publishing', published: 'Live', taken_down: 'Taken down', expired: 'Expired',
+  };
+
+  const readyCard = (s) => {
+    const d = draftFor(s);
+    const card = el('div');
+    const counter = el('p', { className: 'muted' });
+    const button = el('button', { className: 'btn', textContent: 'Approve and publish' });
+    const update = () => {
+      const left = s.photos.length - d.removed.size;
+      counter.textContent = `${left} of ${s.photos.length} photos will go in the gallery. It stays up for one month from when you approve.`;
+      button.disabled = left === 0;
+    };
+    const name = el('input', { value: d.client, oninput: (e) => { d.client = e.target.value; } });
+    card.append(el('label', { textContent: "Client's name, as they'll see it" }, name));
+
+    const thumbs = el('div', { className: 'thumbs' });
+    const coverName = () => d.cover || s.photos.find((p) => !d.removed.has(p.name))?.name;
+    const paint = () => {
+      thumbs.querySelectorAll('.thumb').forEach((t) => {
+        const n = t.dataset.name;
+        const out = d.removed.has(n);
+        t.classList.toggle('out', out);
+        t.classList.toggle('cover', n === coverName());
+        t.querySelector('.tag').hidden = n !== coverName();
+        t.querySelector('.rm').textContent = out ? 'Put back' : 'Remove';
+      });
+      update();
+    };
+    s.photos.forEach((p) => {
+      const tile = el('div', { className: 'thumb', title: p.name });
+      tile.dataset.name = p.name;
+      tile.append(
+        el('img', { src: `/work/${s.slug}/${p.thumb}`, alt: p.name, loading: 'lazy' }),
+        el('span', { className: 'tag', textContent: 'Opening photo' }),
+        el('div', { className: 'acts' },
+          el('button', { className: 'rm', onclick: () => { d.removed.has(p.name) ? d.removed.delete(p.name) : d.removed.add(p.name); if (d.cover === p.name) d.cover = null; paint(); } }),
+          el('button', { textContent: 'Opening', title: 'Use as the opening photo', onclick: () => { d.removed.delete(p.name); d.cover = p.name; paint(); } }),
+        ),
+      );
+      thumbs.append(tile);
+    });
+    button.onclick = async () => {
+      button.disabled = true;
+      button.textContent = 'Starting…';
+      try {
+        await post('/api/publish', { name: s.name, client: d.client, removed: [...d.removed], cover: d.cover });
+        refresh(true);
+      } catch (err) { toast(err.message); button.disabled = false; button.textContent = 'Approve and publish'; }
+    };
+    card.append(counter, el('p', { className: 'tools' }, 'Your photos stay private until you approve.'), thumbs, el('p', { className: 'tools' }, button));
+    paint();
+    return card;
+  };
+
+  const liveCard = (s) => {
+    const open = el('a', { href: s.url, target: '_blank', rel: 'noopener', textContent: s.url });
+    const message = el('textarea', { value: s.message, readOnly: true, 'aria-label': 'Message for your client' });
+    const down = el('button', { className: 'quiet', textContent: 'Take down gallery', onclick: async () => {
+      if (!confirm(`Take down the gallery for ${s.client}? The link will stop working for good.`)) return;
+      down.disabled = true;
+      try { await post('/api/take-down', { name: s.name }); refresh(true); }
+      catch (err) { toast(err.message); down.disabled = false; }
+    } });
+    return el('div', { className: 'done' },
+      el('p', { className: 'muted' }, `${s.count} photos, ${s.size} download. Available until ${s.expires_label}.`),
+      el('p', {}, open),
+      el('div', { className: 'linkbox' },
+        el('button', { className: 'btn', textContent: 'Copy message', onclick: () => copy(message.value, 'Message') }),
+        el('button', { className: 'quiet', textContent: 'Copy link only', onclick: () => copy(s.url, 'Link') }),
+        down),
+      el('label', { textContent: 'Message for your client' }, message));
+  };
+
+  let lastDraw = '';
+  const refresh = async (force) => {
+    let shoots;
+    try { shoots = Object.values((await (await fetch('/api/shoots')).json()).shoots); }
+    catch { return; }
+    // Only redraw on a real change, so typing and scrolling aren't interrupted.
+    const key = JSON.stringify(shoots.map(({ stable_since, ...rest }) => rest));
+    if (key === lastDraw && !force) return;
+    lastDraw = key;
+    const order = ['ready', 'publishing', 'building', 'waiting', 'published', 'taken_down', 'expired'];
+    shoots.sort((a, b) => order.indexOf(a.status) - order.indexOf(b.status));
+    $('empty').hidden = shoots.length > 0;
+    $('list').replaceChildren(...shoots.map((s) => {
+      const card = el('section', { className: 'shoot' },
+        el('div', { className: 'row' }, el('h2', { textContent: s.client }), el('span', { className: `status ${s.status}`, textContent: LABELS[s.status] || s.status })));
+      if (s.client !== s.name) card.append(el('p', { className: 'muted', textContent: `Folder: ${s.name}` }));
+      if (s.error) card.append(el('p', { className: 'error', textContent: s.error }));
+      (s.failed || []).forEach((f) => card.append(el('p', { className: 'warn', textContent: `${f.failed} couldn't be read, so it's left out. Check the file, or replace it in the folder to rebuild.` })));
+      if (s.status === 'ready' && s.others) card.append(el('p', { className: 'warn', textContent: `${s.others} file${s.others === 1 ? ' isn’t a JPEG' : 's aren’t JPEGs'} and won't be included.` }));
+      if (s.changed_after_publish) card.append(el('p', { className: 'warn', textContent: "This folder changed after publishing. The live gallery doesn't update by itself." }));
+      if (s.status === 'waiting') card.append(el('p', { className: 'muted', textContent: 'Building starts once the folder has gone five minutes without changes.' }));
+      if (s.status === 'building') card.append(el('p', { className: 'muted', textContent: 'Making every size of every photo. Large shoots take a minute or two, more if Drive needs to download them first.' }));
+      if (s.status === 'publishing') card.append(el('p', { className: 'muted', textContent: 'Uploading to Cloudflare. Large shoots can take a while, depending on your internet speed.' }));
+      if (s.status === 'ready' && s.photos?.length) card.append(readyCard(s));
+      if (s.status === 'published') card.append(liveCard(s));
+      return card;
+    }));
+  };
+  refresh(true);
+  setInterval(refresh, 3000);
+</script>
+</body>
+</html>

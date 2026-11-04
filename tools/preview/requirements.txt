@@ -1,6 +1,4 @@
-anthropic>=2.4,<3
-numpy
-opencv-python
+boto3
 Pillow
-pydantic>=2
 python-dotenv
+winotify

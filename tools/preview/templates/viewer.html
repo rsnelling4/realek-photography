@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<!-- Keeps this private link out of what other sites can see. -->
+<meta name="referrer" content="strict-origin">
+<title>Your photo gallery · REALEK Photography</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #FDFAF6; --parchment: #F0E6D9; --terracotta: #C17A50; --terracotta-dark: #A3613A;
+    --warm-brown: #8B5E3C; --dark-brown: #2C1810;
+    --serif: "Playfair Display", Georgia, serif; --sans: "Inter", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; height: 100%; }
+  body { font-family: var(--sans); background: var(--dark-brown); color: var(--cream); -webkit-font-smoothing: antialiased; }
+  button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; padding: 0; }
+  a { color: inherit; text-decoration: none; }
+  button:focus-visible, a:focus-visible { outline: 2px solid var(--terracotta); outline-offset: 2px; }
+  .icon svg { display: block; width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+
+  .brand { font-family: var(--serif); font-weight: 600; letter-spacing: .03em; }
+  .brand span { color: var(--terracotta); }
+  .label { font-size: .7rem; font-weight: 500; letter-spacing: .2em; text-transform: uppercase; }
+  .btn { display: inline-block; padding: .9rem 2rem; background: var(--terracotta); color: var(--cream); font-size: .8rem; font-weight: 500; letter-spacing: .12em; text-transform: uppercase; transition: background .2s; }
+  .btn:hover { background: var(--terracotta-dark); }
+  .link { font-size: .8rem; letter-spacing: .08em; text-decoration: underline; text-underline-offset: 4px; }
+  .icon { display: block; width: 44px; height: 44px; padding: 11px; flex: none; opacity: .85; transition: opacity .2s; }
+  .icon:hover { opacity: 1; }
+  .icon:disabled { opacity: .25; cursor: default; }
+
+  /* Cover: the photo and text get separate areas, so no photo ever has text across a face. */
+  #cover { position: fixed; inset: 0; display: flex; flex-direction: column; }
+  #coverimg { flex: 1; min-height: 0; width: 100%; object-fit: contain; }
+  #covertext { flex: none; max-height: 70%; overflow-y: auto; display: flex; flex-direction: column; align-items: center; padding: 1.25rem 1.5rem calc(1.5rem + env(safe-area-inset-bottom)); text-align: center; }
+  #covertext .brand { font-size: 1.1rem; margin-bottom: 1rem; }
+  #cover h1 { font-family: var(--serif); font-weight: 400; font-style: italic; font-size: clamp(2.2rem, 6vw, 4rem); line-height: 1.1; margin: .5rem 0 .75rem; overflow-wrap: anywhere; }
+  #cover p { margin: 0 0 1.25rem; max-width: 26rem; font-weight: 300; line-height: 1.55; color: rgba(253,250,246,.85); }
+  #cover .link { margin-top: 1rem; }
+  @media (min-aspect-ratio: 1/1) {
+    #cover { flex-direction: row-reverse; }
+    #coverimg { flex: 1 1 58%; width: 58%; height: 100%; }
+    #covertext { flex: 1 1 42%; max-height: none; height: 100%; justify-content: center; }
+  }
+
+  /* Slideshow */
+  #show { position: fixed; inset: 0; display: flex; flex-direction: column; background: var(--dark-brown); }
+  .bar { display: flex; align-items: center; justify-content: space-between; padding: .25rem .5rem; flex: none; }
+  .bar.top { padding-top: calc(.25rem + env(safe-area-inset-top)); }
+  .bar.bottom { justify-content: center; gap: clamp(.25rem, 4vw, 1.5rem); padding-bottom: calc(.5rem + env(safe-area-inset-bottom)); }
+  .bar .brand { padding-left: .75rem; }
+  #stage { position: relative; flex: 1; min-height: 0; touch-action: pan-y; overflow: hidden; }
+  #stage img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: 0; transition: opacity .9s ease; user-select: none; -webkit-user-drag: none; }
+  #stage img.on { opacity: 1; }
+  #progress { height: 2px; background: rgba(253,250,246,.12); flex: none; }
+  #progress div { height: 100%; width: 0; background: var(--terracotta); transition: width .4s; }
+  #counter { font-size: .75rem; letter-spacing: .15em; color: rgba(253,250,246,.65); min-width: 4.5rem; text-align: center; }
+
+  /* Gallery page */
+  #grid { min-height: 100%; background: var(--cream); color: var(--dark-brown); padding-bottom: 3rem; }
+  #grid header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.25rem; }
+  #grid .brand { font-size: 1.1rem; }
+  #grid .intro { max-width: 40rem; margin: 1rem auto 2rem; padding: 0 1.25rem; text-align: center; }
+  #grid .label { color: var(--terracotta); }
+  #grid h2 { font-family: var(--serif); font-weight: 400; font-style: italic; font-size: clamp(1.9rem, 5vw, 2.8rem); margin: .5rem 0 .75rem; overflow-wrap: anywhere; }
+  #expiry { margin: 0; font-weight: 500; font-size: .9rem; line-height: 1.5; }
+  #dlall { margin-top: 1.25rem; }
+  #dlnote { margin: .6rem 0 0; font-size: .75rem; line-height: 1.5; color: var(--warm-brown); }
+  /* Rows read left to right in shooting order. Each tile's width is set from its photo's shape. */
+  #thumbs { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 6px; max-width: 1400px; margin: 0 auto; }
+  #thumbs::after { content: ""; flex-grow: 100000; }
+  .tile { position: relative; background: var(--parchment); }
+  .tile > button { display: block; width: 100%; }
+  .tile img { display: block; width: 100%; height: auto; }
+  .tile .icon { position: absolute; right: 0; bottom: 0; color: #fff; opacity: 1; filter: drop-shadow(0 1px 3px rgba(0,0,0,.7)); }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-prev" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+  <symbol id="i-next" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5Z"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/></symbol>
+</svg>
+
+<section id="cover">
+  <img id="coverimg" alt="">
+  <div id="covertext">
+    <div class="brand">REALEK<span>.</span></div>
+    <div class="label">Your gallery</div>
+    <h1 id="clientname"></h1>
+    <p>Your finished photos are ready. I hope you love them as much as I loved taking them.</p>
+    <button class="btn" id="start">Play slideshow</button>
+    <button class="link" id="browse">Browse all photos</button>
+  </div>
+</section>
+
+<section id="show" hidden aria-label="Slideshow">
+  <div class="bar top">
+    <div class="brand">REALEK<span>.</span></div>
+    <button class="icon" id="togrid" aria-label="See all photos"><svg><use href="#i-grid"/></svg></button>
+  </div>
+  <div id="stage"><img id="a" alt=""><img id="b" alt=""></div>
+  <div id="progress"><div></div></div>
+  <div class="bar bottom">
+    <button class="icon" id="prev" aria-label="Previous photo"><svg><use href="#i-prev"/></svg></button>
+    <button class="icon" id="playpause" aria-label="Pause"><svg><use href="#i-pause"/></svg></button>
+    <div id="counter" aria-live="off"></div>
+    <a class="icon" id="dl" aria-label="Download this photo"><svg><use href="#i-down"/></svg></a>
+    <button class="icon" id="next" aria-label="Next photo"><svg><use href="#i-next"/></svg></button>
+  </div>
+</section>
+
+<section id="grid" hidden>
+  <header>
+    <div class="brand">REALEK<span>.</span></div>
+    <button class="btn" id="replay" style="padding:.6rem 1rem">Play slideshow</button>
+  </header>
+  <div class="intro">
+    <div class="label">Your gallery</div>
+    <h2 id="gridname"></h2>
+    <p id="expiry"></p>
+    <a class="btn" id="dlall"></a>
+    <p id="dlnote"></p>
+  </div>
+  <div id="thumbs"></div>
+</section>
+
+<script>
+(() => {
+  const data = /*MANIFEST*/null;
+  const photos = data.photos;
+  const SLIDE_MS = 5000;
+  const $ = (id) => document.getElementById(id);
+  const icon = (name) => `<svg><use href="#i-${name}"/></svg>`;
+  const views = { cover: $('cover'), show: $('show'), grid: $('grid') };
+  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const showView = (name) => {
+    Object.entries(views).forEach(([key, el]) => { el.hidden = key !== name; });
+    window.scrollTo(0, 0);
+    if (name !== 'show') stopTimer();
+  };
+
+  // ---------- Slideshow ----------
+  let index = 0, playing = false, timer = null, loadToken = 0, front = $('a'), back = $('b');
+
+  const stopTimer = () => { clearTimeout(timer); timer = null; };
+  const startTimer = () => {
+    stopTimer();
+    if (playing && !document.hidden && !views.show.hidden) timer = setTimeout(() => next(true), SLIDE_MS);
+  };
+  const setPlaying = (on) => {
+    playing = on;
+    $('playpause').innerHTML = icon(on ? 'pause' : 'play');
+    $('playpause').setAttribute('aria-label', on ? 'Pause' : 'Play');
+    startTimer();
+  };
+  const preload = (i) => { if (photos[i]) new Image().src = photos[i].src; };
+
+  const showPhoto = async (i) => {
+    index = i;
+    const photo = photos[i];
+    const token = ++loadToken;
+    $('counter').textContent = `${i + 1} / ${photos.length}`;
+    $('progress').firstElementChild.style.width = `${((i + 1) / photos.length) * 100}%`;
+    $('prev').disabled = i === 0;
+    $('dl').href = photo.full;
+    $('dl').download = photo.name;
+    stopTimer();
+    back.src = photo.src;
+    back.alt = `Photo ${i + 1} of ${photos.length}`;
+    try { await back.decode(); } catch { /* still show whatever loaded */ }
+    if (token !== loadToken) return;  // a newer photo was asked for meanwhile
+    back.classList.add('on');
+    front.classList.remove('on');
+    [front, back] = [back, front];
+    preload(i + 1);
+    preload(i - 1);
+    startTimer();
+  };
+
+  const finish = () => {
+    setPlaying(false);
+    showView('grid');
+  };
+  function next(auto) {
+    if (index >= photos.length - 1) return finish();
+    showPhoto(index + 1);
+    if (!auto) startTimer();
+  }
+  const prev = () => { if (index > 0) showPhoto(index - 1); };
+  const play = (from) => {
+    showView('show');
+    setPlaying(!reducedMotion);
+    showPhoto(from);
+  };
+
+  // ---------- Gallery page ----------
+  const ROW_HEIGHT = matchMedia('(min-width: 720px)').matches ? 240 : 130;
+  const buildGrid = () => {
+    const wrap = $('thumbs');
+    photos.forEach((photo, i) => {
+      const tile = document.createElement('div');
+      tile.className = 'tile';
+      const shape = photo.w / photo.h;
+      tile.style.flex = `${shape * 100} 1 ${shape * ROW_HEIGHT}px`;
+      const open = document.createElement('button');
+      open.setAttribute('aria-label', `View photo ${i + 1}`);
+      const img = document.createElement('img');
+      img.src = photo.thumb;
+      img.alt = `Photo ${i + 1} of ${photos.length}`;
+      img.loading = 'lazy';
+      img.width = photo.w;
+      img.height = photo.h;
+      open.append(img);
+      open.addEventListener('click', () => { showView('show'); setPlaying(false); showPhoto(i); });
+      const down = document.createElement('a');
+      down.className = 'icon down';
+      down.href = photo.full;
+      down.download = photo.name;
+      down.setAttribute('aria-label', `Download photo ${i + 1}`);
+      down.innerHTML = icon('down');
+      tile.append(open, down);
+      wrap.append(tile);
+    });
+  };
+
+  // ---------- Wiring ----------
+  $('clientname').textContent = data.client;
+  $('gridname').textContent = data.client;
+  document.title = `${data.client}: your gallery · REALEK Photography`;
+  $('coverimg').src = photos[data.cover || 0].src;
+  $('expiry').textContent = `This private gallery is available until ${data.expires}, so be sure to save your photos.`;
+  $('dlall').href = data.zip.src;
+  $('dlall').download = data.zip.name;
+  $('dlall').textContent = `Download all ${photos.length} photo${photos.length === 1 ? '' : 's'}`;
+  $('dlnote').textContent = `${data.zip.size} in total, so Wi-Fi is best. You can also save one at a time using the arrow on each photo.`;
+
+  $('start').addEventListener('click', () => play(0));
+  $('replay').addEventListener('click', () => play(0));
+  $('browse').addEventListener('click', () => showView('grid'));
+  $('togrid').addEventListener('click', () => { setPlaying(false); showView('grid'); });
+  $('prev').addEventListener('click', prev);
+  $('next').addEventListener('click', () => next(false));
+  $('playpause').addEventListener('click', () => setPlaying(!playing));
+
+  document.addEventListener('keydown', (e) => {
+    if (views.show.hidden) return;
+    if (e.key === 'ArrowRight') next(false);
+    if (e.key === 'ArrowLeft') prev();
+    if (e.key === 'Escape') { setPlaying(false); showView('grid'); }
+    if (e.key === ' ' && e.target === document.body) { e.preventDefault(); setPlaying(!playing); }
+  });
+  document.addEventListener('visibilitychange', () => (document.hidden ? stopTimer() : startTimer()));
+
+  let touchX = null;
+  $('stage').addEventListener('touchstart', (e) => { touchX = e.touches[0].clientX; }, { passive: true });
+  $('stage').addEventListener('touchend', (e) => {
+    if (touchX === null) return;
+    const dx = e.changedTouches[0].clientX - touchX;
+    if (Math.abs(dx) > 50) (dx > 0 ? prev : () => next(false))();
+    touchX = null;
+  });
+
+  buildGrid();
+})();
+</script>
+</body>
+</html>
